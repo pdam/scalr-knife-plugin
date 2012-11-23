@@ -1,0 +1,17 @@
+= DESCRIPTION:
+
+Minimal Ubuntu style glusterfs replication cookbook.
+
+= REQUIREMENTS: 
+
+
+It only configures a glusterfs volume in replication node in every glusterfs server. It should be quite easy to extend tough.
+
+= ATTRIBUTES:
+
+  * export directory for the servers. 
+  * import directory for the clients.
+
+= USAGE:
+
+A role named glusterfs-server is required, this node should contain at least server recipe. Client recipe looks for all the nodes within this role in order to create client configurations.
