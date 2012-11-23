@@ -32,77 +32,6 @@ require 'chef/knife/scalr_base'
     #ServerTerminate
     #StatisticsGetGraphURL
 
-
-
-Chef::Configuration.instance(:must_exist).load do
-  
-
-  def _cset(name, *args, &block)
-    unless exists?(name)
-      set(name, *args, &block)
-    end
-  end
-
-  # =========================================================================
-  # These variables MUST be set in the client capfiles. If they are not set,
-  # the deploy will fail with an error.
-  # =========================================================================
-
-  _cset(:gateway) { abort "Please specify the instance to use as a gateway. Example: set :gateway, 'foo'" }
-  _cset(:gateway_type)  { abort "Please specify the type of instance for your gateway. Example: set :gateway_type, 'ubuntu'" }
-  ###
-  
-   namespace :scalr do 
-    desc "Enumerate SCALR hosts" 
-    # task :enum, :roles=>[:db],  :only => { :primary => true } do 
-    task :enum, :roles=>[:gw] do 
-      hosts = Hash.new 
-      logger.info "SCALR Hosts:"
-      if (gateway_type == 'centos')
-        hosts_cmd = 'find /etc/scalr/private.d/hosts | cut -d"/" -f6,7 | grep "/"'
-      elsif (gateway_type == 'ubuntu')
-        hosts_cmd = 'find /etc/aws/hosts | cut -d"/" -f5,6 | grep "/"'
-      else
-        abort "You must specify a gateway type"
-      end
-      run hosts_cmd, :pty => true do |ch, stream, out| 
-        next if out.chomp == '' 
-        logger.info out.sub(/\//,' ') 
-        out.split("\r\n").each do |host| 
-          host=host.split("/") 
-          (hosts[host[0]] ||= []) << host[1] 
-        end 
-      end
-      if hosts.has_key?('mysql')
-        if hosts['mysql'].size > 1 
-          hosts['mysql'] = hosts['mysql'] - hosts['mysql-master']
-        end
-      end
-      set :scalr_hosts, hosts
-    end 
-  end 
-
-  scalr.enum
-  ###
-  
-  # Gem shouldn't set the roles
-  # role :lb, :no_release => true do
-  #   scalr_hosts['loadbalancer']
-  # end
-  # role :web, :no_release => true do 
-  #   scalr_hosts['www'] 
-  # end 
-  # role :app do 
-  #   scalr_hosts['app'] 
-  # end 
-  # role :db, :no_release => true  do 
-  #   scalr_hosts['mysql'] 
-  # end 
-  # role :memcached, :no_release => true do 
-  #   scalr_hosts['memcached'] 
-  # end
-
-end
 require 'chef/node'
 require 'chef/api_client'
 
@@ -114,13 +43,23 @@ class Chef
 
       banner "knife Scalr api  execute SERVER_ID [SERVER_ID] (options)"
 
-    
+      option :purge,
+        :short => "-P",
+        :long => "--purge",
+        :boolean => true,
+        :default => false,
+        :description => "Destroy corresponding node and client on the Chef Server, in addition to destroying the Scalr node itself. Assumes node and client have the same name as the server (if not, add the '--node-name' option)."
+
       option :chef_node_name,
         :short => "-N NAME",
         :long => "--node-name NAME",
         :description => "The name of the node and client to delete, if it differs from the server name. Only has meaning when used with the '--purge' option."
 
-
+      # Extracted from Chef::Knife.delete_object, because it has a
+      # confirmation step built in... By specifying the '--purge'
+      # flag (and also explicitly confirming the server destruction!)
+      # the user is already making their intent known.  It is not
+      # necessary to make them confirm two more times.
       def destroy_item(klass, name, type_name)
         begin
           object = klass.load(name)

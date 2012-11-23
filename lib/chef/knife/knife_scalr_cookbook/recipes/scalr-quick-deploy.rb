@@ -1,5 +1,14 @@
 require 'chef/knife/scalr_base'
+require 'chef/node'
+require 'chef/api_client'
 
+class Chef
+  class Knife
+    class ScalrAPIBase < Knife
+
+      include Knife::ScalrAPIBase
+
+      banner "knife Scalr api  execute SERVER_ID [SERVER_ID] (options)"
 
 
     #ApacheVhostCreate
@@ -83,36 +92,9 @@ Chef::Configuration.instance(:must_exist).load do
   end 
 
   scalr.enum
-  ###
-  
-  # Gem shouldn't set the roles
-  # role :lb, :no_release => true do
-  #   scalr_hosts['loadbalancer']
-  # end
-  # role :web, :no_release => true do 
-  #   scalr_hosts['www'] 
-  # end 
-  # role :app do 
-  #   scalr_hosts['app'] 
-  # end 
-  # role :db, :no_release => true  do 
-  #   scalr_hosts['mysql'] 
-  # end 
-  # role :memcached, :no_release => true do 
-  #   scalr_hosts['memcached'] 
-  # end
 
-end
-require 'chef/node'
-require 'chef/api_client'
 
-class Chef
-  class Knife
-    class ScalrAPIBase < Knife
 
-      include Knife::ScalrAPIBase
-
-      banner "knife Scalr api  execute SERVER_ID [SERVER_ID] (options)"
 
     
       option :chef_node_name,
